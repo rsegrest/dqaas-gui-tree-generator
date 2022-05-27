@@ -35,17 +35,34 @@ export const splitElements = (input) => {
   // console.log(masterObject);
   return { elementStruct, maxDepth };
 };
-const createNode = ({ idx, data, hasChildren, children }) => {
-  return {
-    [idx]: {
-      index: idx,
-      canMove: true,
-      hasChildren,
-      data,
-      canRename: true
-    }
+// const createNode = ({ idx, data, hasChildren, children }) => {
+//   return {
+//     [idx]: {
+//       index: idx,
+//       canMove: true,
+//       hasChildren,
+//       data,
+//       canRename: true
+//     }
+//   };
+// };
+const createAndAddNode = ({ idx, data, hasChildren, children, struct }) => {
+  const newNode = {
+    index: idx,
+    canMove: true,
+    hasChildren,
+    data,
+    canRename: true
   };
+  if (struct) {
+    struct[idx] = newNode;
+  }
+  return newNode;
 };
+const isDeeper = (pointer) => {
+  return Object.keys(pointer) === null;
+};
+const plumbDepth = (pointer) => {};
 const buildUIStruct = ({ elementStruct, maxDepth }) => {
   let depth = 0;
   // const elementsChildren = dqInputObject.map((el) => el[0]);
@@ -74,30 +91,81 @@ const buildUIStruct = ({ elementStruct, maxDepth }) => {
   //     canRename: true
   //   }
   // };
-  const rootItem = createNode({
+
+  const massPropsTree = {
+    items: {
+      // ...firstOrderItem
+    }
+  };
+
+  const rootItem = createAndAddNode({
     idx: "root",
     hasChildren: true,
     children: ["Elements"],
-    data: "root"
+    data: "root",
+    struct: massPropsTree.items
   });
   // console.log("elementStruct::");
   // console.log(elementStruct);
   const firstOrderArray = Object.keys(elementStruct);
   // console.log("firstOrderArray: ");
   // console.log(firstOrderArray);
-  const firstOrderItem = {
-    Elements: {
-      index: "Elements",
-      canMove: true,
-      hasChildren: true,
-      children: firstOrderArray,
-      data: "Elements",
-      canRename: true
-    }
-  };
+  const firstOrderItem = createAndAddNode({
+    idx: "Elements",
+    hasChildren: true,
+    children: firstOrderArray,
+    data: "Elements",
+    canRename: true,
+    struct: massPropsTree.items
+  });
+
   let pointer = elementStruct;
-  let parentPointer = null;
+  let parentPointer = "Elements";
   // TODO: traverse the tree, sort of in reverse of what was done to build.
+
+  // while (true) {
+  const elementsChildrenStructArray = [];
+  // if (parentPointer === null) {
+  let entries = Object.entries(pointer);
+  console.log("the keys:");
+  console.log(entries);
+
+  const objectData = [];
+  // each index in "levels" should have index, data, children right now
+  let levels = [];
+  for (let i = 0; i < entries.length; i += 1) {
+    console.log("create entry for (0): " + entries[i]);
+    levels.push(entries[i][0]);
+
+    // TODO: Try using "maxDepth"
+    // for (let j = 0; j < maxDepth; j += 1) {
+
+    // console.log("create entry for (1): " + entries[i][j][0]);
+    // }
+  }
+  objectData.push(levels);
+  console.log("objectData:");
+  console.log(objectData);
+  /*
+
+  ks.forEach((k) => {
+    const node = createAndAddNode({
+      idx: k,
+      hasChildren: false,
+      data: k,
+      struct: massPropsTree.items
+    });
+    // console.log("node:");
+    // console.log(node);
+    // elementsChildrenStructArray.push(node);
+  });
+  // }
+
+  console.log("elementsChildrenStructArray:");
+  console.log(elementsChildrenStructArray);
+  // }
+
+  */
 
   // elementStruct.forEach((str) => {
   //   const splitString = str.split(".");
@@ -115,13 +183,7 @@ const buildUIStruct = ({ elementStruct, maxDepth }) => {
   //     parentPointer = parentPointer[pointer];
   //   }
   // });
-  const massPropsTree = {
-    items: {
-      ...rootItem,
-      ...firstOrderItem
-      //     ...elementsChildrenStructArray
-    }
-  };
+
   console.log("massPropsTree");
   console.log(JSON.stringify(massPropsTree));
   // return massPropsTree;
