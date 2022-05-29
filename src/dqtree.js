@@ -19,6 +19,18 @@ export default class DQTree {
     console.log(this.uiTree);
   };
 
+  createElementsItem = (children) => {
+    return {
+      Elements: {
+        index: "Elements",
+        canMove: true,
+        hasChildren: true,
+        children,
+        data: "Elements",
+        canRename: true
+      }
+    };
+  };
   initializeUiTree = () => {
     const rootItem = this.createAndAddNode({
       idx: "root",
@@ -27,25 +39,11 @@ export default class DQTree {
       data: "root",
       dontAdd: true
     });
-    // *******************************************
-    // TODO : Generate the array below dynamically
-    // - Also, move from this function, or no?
-    // *******************************************
-    const firstOrderItem = {
-      Elements: {
-        index: "Elements",
-        canMove: true,
-        hasChildren: true,
-        children: ["Habitat", "Transfer_Vehicle", "branch1"],
-        data: "Elements",
-        canRename: true
-      }
-    };
     this.uiTree = {
       items: {
-        root: rootItem,
-        ...firstOrderItem
-        //     ...elementsChildrenStructArray
+        root: rootItem
+        // ...firstOrderItem
+        // ...elementsChildrenStructArray
       }
     };
   };
@@ -72,6 +70,17 @@ export default class DQTree {
   executeTest = () => {
     console.log("executeTest");
     this.initializeUiTree();
+
+    const children = Object.keys(this.jsonTree);
+
+    const firstOrderItem = this.createElementsItem(children);
+
+    this.uiTree = {
+      items: {
+        ...this.uiTree.items,
+        ...firstOrderItem
+      }
+    };
     this.traverse(this.jsonTree, this.expandToNode);
     this.printUiTree();
     // console.log(this.uiTree);
