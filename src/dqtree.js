@@ -1,5 +1,6 @@
 export default class DQTree {
   numericalIndexMap = [];
+  indexAssignmentCounter = 1;
   flattenedList = null;
   jsonTree = null;
   initializationComplete = false;
@@ -26,9 +27,11 @@ export default class DQTree {
 
   initialize = (flattenedList, elementStruct, maxDepth) => {
     this.flattenedList = flattenedList;
+    this.assignAllIndices(flattenedList);
     this.jsonTree = elementStruct;
     this.maxDepth = maxDepth;
     this.initializeUiTree();
+    // TODO: This is redundantly assigning indices to first level
     const children = this.getFirstOrderChildren();
     console.log("children");
     console.log(children);
@@ -42,7 +45,7 @@ export default class DQTree {
     };
 
     this.traverse(this.jsonTree, this.expandToNode);
-    this.traverse(this.jsonTree, this.assignAllIndices);
+    // this.traverse(this.jsonTree, this.assignAllIndices);
     this.printUiTree();
     this.initializationComplete = true;
     // console.log('initialization complete')
@@ -55,7 +58,7 @@ export default class DQTree {
     if (parent === null) {
       return splitStructure[0] === element;
     } else {
-      let foundMatch = false;
+      // let foundMatch = false;
       for (let i = 0; i < splitStructure.length - 1; i += 1) {
         console.log(`looping: ${i}`);
         if (splitStructure[i] === parent && splitStructure[i + 1] === element)
@@ -66,40 +69,6 @@ export default class DQTree {
       return (this.arrayCount += 1);
     }
   }
-
-  assignNumericalIndex = (element, parent = null) => {
-    console.log(
-      `assignNumericalIndex :: element: ${element}, parent: ${parent}`
-    );
-    // const array1 = [5, 12, 8, 130, 44];
-
-    // const isLargeNumber = (element) => element > 13;
-
-    // console.log(array1.findIndex(isLargeNumber));
-    // expected output: 3
-    this.arrayCount = -1;
-
-    let depth = 0;
-    // if (parent) {
-    // DEPTH IS GT 0
-    // }
-
-    const idx = this.flattenedList.findIndex(this.findMatchInFlatlist, {
-      element,
-      parent
-    });
-    const wtf = this.doesIndexExist(idx);
-    console.log("does index exist?:");
-    console.log(wtf);
-
-    this.numericalIndexMap.push({
-      index: idx,
-      element,
-      parent,
-      depth
-    });
-    return idx;
-  };
 
   flattenObject = (input) => {
     const output = input.map((element) => element[0]);
@@ -134,29 +103,6 @@ export default class DQTree {
     return { elementStruct, maxDepth };
   };
 
-  doesIndexExist = (newIndex) => {
-    this.numericalIndexMap.forEach((el) => {
-      if (el.index === newIndex) {
-        return true;
-      }
-    });
-    // return this.indexRegistry.includes(newIndex);
-    return false;
-  };
-  // generateUniqueIndex = (indexName) => {
-  //   if (!this.doesIndexExist(indexName)) {
-  //     return indexName;
-  //   }
-  //   let count = 1;
-  //   while (!this.doesIndexExist(`${indexName}_${count}`)) {
-  //     count += 1;
-  //     // prevent endless loop
-  //     if (count > 500) {
-  //       break;
-  //     }
-  //   }
-  //   return `${indexName}_${count}`;
-  // };
   getUiTree = () => {
     if (this.initializationComplete) {
       return this.uiTree;
@@ -168,6 +114,60 @@ export default class DQTree {
   };
   printUiTree = () => {
     console.log(this.uiTree);
+  };
+
+  isAlreadyAssigned = (elementName, parentName = null) => {
+    return this.lookupIndex(elementName, parentName) !== null;
+  };
+
+  lookupNameByIndex = (elementIndex) => {
+    if (elementIndex === null) {
+      return null;
+    }
+
+    for (let i = 0; i < this.numericalIndexMap.length; i += 1) {
+      const thisIndex = this.numericalIndexMap[i].index;
+      if (thisIndex === elementIndex) {
+        return this.numericalIndexMap[i].elementName;
+      }
+    }
+    console.log("DIDN'T FIND A MATCH");
+    return null;
+  };
+
+  lookupIndex = (elementName, parentName = null) => {
+    if (parentName === null) {
+      for (let i = 0; i < this.numericalIndexMap.length; i += 1) {
+        if (this.numericalIndexMap[i].elementName === elementName) {
+          return this.numericalIndexMap[i].index;
+        }
+      }
+      return null;
+    } else {
+      for (let i = 0; i < this.numericalIndexMap.length; i += 1) {
+        const parentIndex = this.numericalIndexMap[i].parent;
+        const currentElementParentName = this.lookupNameByIndex(parentIndex);
+        if (
+          this.numericalIndexMap[i].elementName === elementName &&
+          currentElementParentName === parentName
+        ) {
+          return this.numericalIndexMap[i].index;
+        }
+      }
+    }
+  };
+
+  assignNumericalIndex = ({ element, parentIndex, depth }) => {
+    // TODO: ??? Check if exists
+    const newIndex = this.indexAssignmentCounter;
+    this.indexAssignmentCounter += 1;
+    this.numericalIndexMap.push({
+      index: newIndex,
+      elementName: element,
+      parent: parentIndex,
+      depth
+    });
+    return newIndex;
   };
 
   createElementsItem = (children) => {
@@ -215,6 +215,7 @@ export default class DQTree {
       }
     }
   };
+  // TODO: Fix this -- indices have already been assigned
   getFirstOrderChildren = () => {
     const childrenNames = Object.keys(this.jsonTree);
     const childrenIndices = [];
@@ -235,13 +236,48 @@ export default class DQTree {
     console.log(`${k} : ${JSON.stringify(this.filterNames(v))}`);
   };
 
-  // use as argument to traverse
-  assignAllIndices = (k, v) => {
-    console.log("key, value: ");
-    console.log(k);
-    console.log(v);
-    this.assignNumericalIndex(k);
+  assignAllIndices = (flattenedList) => {
+    flattenedList.forEach((el) => {
+      // const currentMap = [];
+      const substrArray = el.split(".");
+      // const mapIndicesToThisSubstr = []
+      for (let i = 0; i < substrArray.length; i += 1) {
+        const element = substrArray[i];
+        let parentIndex = null;
+        if (i !== 0) {
+          if (i === 1) {
+            parentIndex = this.lookupIndex(substrArray[i - 1], null);
+            console.log("parentIndex");
+            console.log(parentIndex);
+          } else {
+            const nameOfParent = substrArray[i - 1];
+            const nameOfGrandparent = substrArray[i - 2];
+            // console.log('parent, grandparent: ');
+            // console.log(nameOfParent);
+            // console.log(nameOfGrandparent)
+            parentIndex = this.lookupIndex(nameOfParent, nameOfGrandparent);
+            // console.log(`this element is ${substrArray[i]}, and its parent is ${parentIndex}`)
+          }
+
+          this.assignNumericalIndex({ element, parentIndex, depth: i });
+        } else {
+          if (!this.isAlreadyAssigned(element)) {
+            const newIndex = this.assignNumericalIndex({
+              element,
+              parentIndex: null,
+              depth: 0
+            });
+          } else {
+            console.log(
+              " else -- find element index test -- Not yet implemented"
+            );
+            // const parentIndex = this.findElementIndexTest(element);
+          }
+        }
+      }
+    });
   };
+
   expandToNode = (k, v) => {
     // TODO: Need to get a unique index before coming up with "children's names"
     // TODO: Need to register index names
